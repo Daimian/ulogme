@@ -1,5 +1,6 @@
-import SocketServer
-import SimpleHTTPServer
+import socketserver as SocketServer
+import http.server as SimpleHTTPServer
+import subprocess
 import sys
 import cgi
 import os
@@ -45,7 +46,7 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
       note = form.getvalue('note')
       note_time = form.getvalue('time')
       os.chdir(rootdir) # pop out
-      os.system('echo %s | ./note.sh %s' % (note, note_time))
+      subprocess.run(['./note.sh', note_time], input=note or '', text=True)
       updateEvents() # defined in export_events.py
       os.chdir('render') # go back to render
       result = 'OK'
@@ -65,10 +66,11 @@ class CustomHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     self.send_response(200)
     self.send_header('Content-type','text/html')
     self.end_headers()
-    self.wfile.write(result)
+    self.wfile.write(result.encode('utf-8'))
 
+SocketServer.ThreadingTCPServer.allow_reuse_address = True
 httpd = SocketServer.ThreadingTCPServer((IP, PORT), CustomHandler)
 
-print 'Serving ulogme, see it on http://localhost:' + `PORT`
+print('Serving ulogme, see it on http://localhost:' + str(PORT))
 httpd.serve_forever()
 
